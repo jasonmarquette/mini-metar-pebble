@@ -2,9 +2,13 @@
   "name": "mini-metar-pebble",
   "author": "MakeAwesomeHappen",
   "version": "1.0.0",
-  "keywords": ["pebble-app"],
+  "keywords": [
+    "pebble-app"
+  ],
   "private": true,
-  "dependencies": {},
+  "dependencies": {
+    "pebble-clay": "^1.0.4"
+  },
   "pebble": {
     "displayName": "mini-metar-pebble",
     "uuid": "168d050a-5ee6-4441-bcb7-e07a1eaa58df",
@@ -15,15 +19,24 @@
       "basalt",
       "chalk",
       "diorite",
-      "emery",
-      "flint",
-      "gabbro"
+      "emery"
     ],
     "watchapp": {
       "watchface": false
     },
     "messageKeys": [
-      "dummy"
+      "Airport",
+      "Category",
+      "TemperatureC",
+      "PressureHpa",
+      "WindDirection",
+      "WindSpeedKt",
+      "UpdatedAt",
+      "Offline",
+      "RequestWeather",
+      "UseCelsius",
+      "UseHpa",
+      "RefreshMinutes"
     ],
     "resources": {
       "media": []

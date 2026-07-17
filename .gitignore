@@ -1,0 +1,21 @@
+# Pebble build output
+build/
+
+# Node dependencies
+node_modules/
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.swp
+*~
+
+# Editor settings
+.vscode/
+.idea/
+.lock-waf_darwin_build
