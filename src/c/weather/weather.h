@@ -45,5 +45,15 @@ void weather_set_wind_speed_kt(int wind_speed_kt);
 void weather_set_updated_at(time_t updated_at);
 void weather_set_offline(bool offline);
 
-void weather_set_temperature_unit(TemperatureUnit unit);
-void weather_set_pressure_unit(PressureUnit unit);
+void weather_set_temperature_unit(
+    TemperatureUnit unit
+);
+
+void weather_set_pressure_unit(
+    PressureUnit unit
+);
+
+void weather_set_units(
+    bool use_celsius,
+    bool use_hpa
+);

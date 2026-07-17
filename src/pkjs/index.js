@@ -1,7 +1,23 @@
 var REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 var DEFAULT_AIRPORT = 'KCXO';
-var METAR_URL = 'https://jasonmarquette.com/api/metar';
+var savedAirport = localStorage.getItem('airport');
 
+if (savedAirport) {
+  DEFAULT_AIRPORT = savedAirport;
+}
+var METAR_URL = 'https://jasonmarquette.com/api/metar';
+var CONFIG_URL =
+  'https://jasonmarquette.com/pebble/mini-metar-config.html';
+
+function setAirport(airport) {
+  DEFAULT_AIRPORT = String(airport)
+    .trim()
+    .toUpperCase();
+
+  localStorage.setItem('airport', DEFAULT_AIRPORT);
+
+  console.log('Airport set to ' + DEFAULT_AIRPORT);
+}
 
 function sendWeatherToWatch(metar) {
   var weather = {
@@ -15,9 +31,13 @@ function sendWeatherToWatch(metar) {
         : Number(metar.windDirection),
     WindSpeedKt: Number(metar.windSpeedKt) || 0,
     UpdatedAt:
-      Number(metar.updatedAt) ||
-      Math.floor(Date.now() / 1000),
-    Offline: 0
+  Number(metar.updatedAt) ||
+  Math.floor(Date.now() / 1000),
+Offline: 0,
+UseCelsius:
+  localStorage.getItem('useCelsius') === '1' ? 1 : 0,
+UseHpa:
+  localStorage.getItem('useHpa') === '1' ? 1 : 0
   };
 
   console.log(
@@ -157,4 +177,56 @@ Pebble.addEventListener('appmessage', function(event) {
     console.log('Watch requested weather refresh.');
     fetchMetar(DEFAULT_AIRPORT);
   }
+});
+Pebble.addEventListener('webviewclosed', function(event) {
+
+  if (!event.response) {
+    return;
+  }
+
+  var settings;
+
+  try {
+    settings = JSON.parse(
+      decodeURIComponent(event.response)
+    );
+  } catch (e) {
+    console.log('Could not parse settings.');
+    return;
+  }
+
+  if (settings.airport) {
+    setAirport(settings.airport);
+  }
+
+  localStorage.setItem(
+    'useCelsius',
+    settings.useCelsius ? '1' : '0'
+  );
+
+  localStorage.setItem(
+    'useHpa',
+    settings.useHpa ? '1' : '0'
+  );
+
+  console.log(
+    'Settings saved: ' +
+    JSON.stringify(settings)
+  );
+
+  fetchMetar(DEFAULT_AIRPORT);
+});
+Pebble.addEventListener('showConfiguration', function() {
+  console.log('Opening configuration page...');
+
+  var url =
+    CONFIG_URL +
+    '?airport=' +
+    encodeURIComponent(DEFAULT_AIRPORT) +
+    '&useCelsius=' +
+    (localStorage.getItem('useCelsius') || '0') +
+    '&useHpa=' +
+    (localStorage.getItem('useHpa') || '0');
+
+  Pebble.openURL(url);
 });

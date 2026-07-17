@@ -30,6 +30,12 @@ static void inbox_received_handler(
   Tuple *offline_tuple =
       dict_find(iterator, MESSAGE_KEY_Offline);
 
+  Tuple *use_celsius_tuple =
+      dict_find(iterator, MESSAGE_KEY_UseCelsius);
+
+  Tuple *use_hpa_tuple =
+      dict_find(iterator, MESSAGE_KEY_UseHpa);
+
   if (airport_tuple) {
     weather_set_airport(
         airport_tuple->value->cstring
@@ -81,6 +87,24 @@ static void inbox_received_handler(
   } else {
     weather_set_offline(false);
   }
+
+  bool use_celsius = false;
+  bool use_hpa = false;
+
+  if (use_celsius_tuple) {
+    use_celsius =
+        use_celsius_tuple->value->int32 != 0;
+  }
+
+  if (use_hpa_tuple) {
+    use_hpa =
+        use_hpa_tuple->value->int32 != 0;
+  }
+
+  weather_set_units(
+      use_celsius,
+      use_hpa
+  );
 
   weather_refresh_display();
 }
@@ -168,10 +192,11 @@ void app_message_service_init(void) {
       outbox_failed_handler
   );
 
-  AppMessageResult result = app_message_open(
-      512,
-      128
-  );
+  AppMessageResult result =
+      app_message_open(
+          512,
+          128
+      );
 
   if (result != APP_MSG_OK) {
     APP_LOG(

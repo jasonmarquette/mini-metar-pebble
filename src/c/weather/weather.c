@@ -74,11 +74,25 @@ void weather_refresh_display(void) {
       s_weather.wind_speed_kt
   );
 
-  main_window_set_airport(s_weather.airport);
-  main_window_set_category(s_weather.category);
-  main_window_set_temperature(s_temperature_buffer);
-  main_window_set_pressure(s_pressure_buffer);
-  main_window_set_wind(s_wind_buffer);
+  main_window_set_airport(
+      s_weather.airport
+  );
+
+  main_window_set_category(
+      s_weather.category
+  );
+
+  main_window_set_temperature(
+      s_temperature_buffer
+  );
+
+  main_window_set_pressure(
+      s_pressure_buffer
+  );
+
+  main_window_set_wind(
+      s_wind_buffer
+  );
 
   weather_refresh_status();
 }
@@ -91,10 +105,14 @@ void weather_refresh_status(void) {
       s_weather.offline
   );
 
-  main_window_set_updated(s_status_buffer);
+  main_window_set_updated(
+      s_status_buffer
+  );
 }
 
-void weather_set_airport(const char *airport) {
+void weather_set_airport(
+    const char *airport) {
+
   if (!airport) {
     return;
   }
@@ -107,7 +125,9 @@ void weather_set_airport(const char *airport) {
   );
 }
 
-void weather_set_category(const char *category) {
+void weather_set_category(
+    const char *category) {
+
   if (!category) {
     return;
   }
@@ -120,36 +140,77 @@ void weather_set_category(const char *category) {
   );
 }
 
-void weather_set_temperature_c(int temperature_c) {
-  s_weather.temperature_c = temperature_c;
+void weather_set_temperature_c(
+    int temperature_c) {
+
+  s_weather.temperature_c =
+      temperature_c;
 }
 
-void weather_set_pressure_hpa(int pressure_hpa) {
-  s_weather.pressure_hpa = pressure_hpa;
+void weather_set_pressure_hpa(
+    int pressure_hpa) {
+
+  s_weather.pressure_hpa =
+      pressure_hpa;
 }
 
-void weather_set_wind_direction(int wind_direction) {
-  s_weather.wind_direction = wind_direction;
+void weather_set_wind_direction(
+    int wind_direction) {
+
+  s_weather.wind_direction =
+      wind_direction;
 }
 
-void weather_set_wind_speed_kt(int wind_speed_kt) {
-  s_weather.wind_speed_kt = wind_speed_kt;
+void weather_set_wind_speed_kt(
+    int wind_speed_kt) {
+
+  s_weather.wind_speed_kt =
+      wind_speed_kt;
 }
 
-void weather_set_updated_at(time_t updated_at) {
-  s_weather.updated_at = updated_at;
+void weather_set_updated_at(
+    time_t updated_at) {
+
+  s_weather.updated_at =
+      updated_at;
 }
 
-void weather_set_offline(bool offline) {
-  s_weather.offline = offline;
+void weather_set_offline(
+    bool offline) {
+
+  s_weather.offline =
+      offline;
 }
 
-void weather_set_temperature_unit(TemperatureUnit unit) {
-  s_weather.temperature_unit = unit;
+void weather_set_temperature_unit(
+    TemperatureUnit unit) {
+
+  s_weather.temperature_unit =
+      unit;
+
   weather_refresh_display();
 }
 
-void weather_set_pressure_unit(PressureUnit unit) {
-  s_weather.pressure_unit = unit;
+void weather_set_pressure_unit(
+    PressureUnit unit) {
+
+  s_weather.pressure_unit =
+      unit;
+
   weather_refresh_display();
+}
+
+void weather_set_units(
+    bool use_celsius,
+    bool use_hpa) {
+
+  s_weather.temperature_unit =
+      use_celsius
+          ? TEMPERATURE_UNIT_CELSIUS
+          : TEMPERATURE_UNIT_FAHRENHEIT;
+
+  s_weather.pressure_unit =
+      use_hpa
+          ? PRESSURE_UNIT_HPA
+          : PRESSURE_UNIT_INHG;
 }
