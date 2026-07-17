@@ -25,11 +25,17 @@ static void configure_text_layer(
 static void main_window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
+  int screen_height = bounds.size.h;
+  int airport_y = screen_height * 3 / 100;
+  int category_y = screen_height * 20 / 100;
+  int weather_y = screen_height * 40 / 100;
+  int wind_y = screen_height * 62 / 100;
+  int updated_y = screen_height - 30;
 
   window_set_background_color(window, GColorBlack);
 
   s_airport_layer = text_layer_create(
-      GRect(0, 5, bounds.size.w, 34));
+    GRect(0, airport_y, bounds.size.w, 34));
 
   configure_text_layer(
       s_airport_layer,
@@ -44,7 +50,7 @@ static void main_window_load(Window *window) {
       text_layer_get_layer(s_airport_layer));
 
   s_category_layer = text_layer_create(
-      GRect(0, 34, bounds.size.w, 28));
+    GRect(0, category_y, bounds.size.w, 28));
 
   configure_text_layer(
       s_category_layer,
@@ -59,7 +65,7 @@ static void main_window_load(Window *window) {
       text_layer_get_layer(s_category_layer));
 
   s_temperature_layer = text_layer_create(
-      GRect(4, 68, bounds.size.w / 2 - 4, 32));
+    GRect(4, weather_y, bounds.size.w / 2 - 4, 32));
 
   configure_text_layer(
       s_temperature_layer,
@@ -74,7 +80,7 @@ static void main_window_load(Window *window) {
       text_layer_get_layer(s_temperature_layer));
 
   s_pressure_layer = text_layer_create(
-      GRect(bounds.size.w / 2, 68, bounds.size.w / 2 - 4, 32));
+    GRect(bounds.size.w / 2, weather_y, bounds.size.w / 2 - 4, 32));
 
   configure_text_layer(
       s_pressure_layer,
@@ -104,7 +110,7 @@ static void main_window_load(Window *window) {
       text_layer_get_layer(s_wind_layer));
 
   s_updated_layer = text_layer_create(
-      GRect(0, bounds.size.h - 30, bounds.size.w, 24));
+    GRect(0, updated_y, bounds.size.w, 24));
 
   configure_text_layer(
       s_updated_layer,
