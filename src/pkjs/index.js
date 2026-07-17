@@ -1,10 +1,7 @@
 var REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 var DEFAULT_AIRPORT = 'KCXO';
 var METAR_URL = 'https://jasonmarquette.com/api/metar';
-var Clay = require('pebble-clay');
-var clayConfig = require('./config');
 
-var clay = new Clay(clayConfig);
 
 function sendWeatherToWatch(metar) {
   var weather = {
@@ -160,33 +157,4 @@ Pebble.addEventListener('appmessage', function(event) {
     console.log('Watch requested weather refresh.');
     fetchMetar(DEFAULT_AIRPORT);
   }
-Pebble.addEventListener('webviewclosed', function(event) {
-  if (!event || !event.response) {
-    return;
-  }
-
-  var settings;
-
-  try {
-    settings = clay.getSettings(event.response);
-  } catch (error) {
-    console.log(
-      'Could not read settings: ' + error.message
-    );
-    return;
-  }
-
-  if (settings.Airport) {
-    DEFAULT_AIRPORT = String(settings.Airport)
-      .trim()
-      .toUpperCase();
-  }
-
-  console.log(
-    'Settings saved. Airport: ' + DEFAULT_AIRPORT
-  );
-
-  fetchMetar(DEFAULT_AIRPORT);
-});
-  
 });

@@ -6,20 +6,15 @@
     "pebble-app"
   ],
   "private": true,
-  "dependencies": {
-    "pebble-clay": "^1.0.4"
-  },
   "pebble": {
     "displayName": "mini-metar-pebble",
     "uuid": "168d050a-5ee6-4441-bcb7-e07a1eaa58df",
     "sdkVersion": "3",
     "enableMultiJS": true,
     "targetPlatforms": [
-      "aplite",
       "basalt",
-      "chalk",
-      "diorite",
-      "emery"
+      "emery",
+      "gabbro"
     ],
     "watchapp": {
       "watchface": false
