@@ -4,9 +4,24 @@ A Pebble watch app that displays current METAR weather for a configurable airpor
 
 The watch requests weather through PebbleKit JS, which calls a lightweight Flask API and sends the result back to the watch using AppMessage.
 
-## Screenshot
+## Screenshots
 
-*Screenshots coming soon.*
+<table>
+  <tr>
+    <th>Pebble Time</th>
+    <th>Pebble Round 2</th>
+    <th>Pebble Time 2</th>
+  </tr>
+  <tr>
+    <td align="center"><img src="images/basalt-screenshot.png" alt="Mini METAR on Pebble Time" width="180"></td>
+    <td align="center"><img src="images/gabbro-screenshot.png" alt="Mini METAR on Pebble Round 2" width="180"></td>
+    <td align="center"><img src="images/emery-screenshot.png" alt="Mini METAR on Pebble Time 2" width="180"></td>
+  </tr>
+</table>
+
+### Configuration page
+
+<img src="images/configuration-page.png" alt="Mini METAR configuration page with Saved Airports" width="420">
 
 ## Why this project?
 
