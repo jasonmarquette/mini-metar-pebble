@@ -16,6 +16,9 @@
       "emery",
       "gabbro"
     ],
+    "capabilities": [
+      "configurable"
+    ],
     "watchapp": {
       "watchface": false
     },
