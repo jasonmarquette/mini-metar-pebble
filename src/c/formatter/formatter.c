@@ -137,64 +137,79 @@ void formatter_updated_status(
   }
 
   int elapsed_minutes = elapsed_seconds / 60;
+  char observed_at[8] = "--:--Z";
+  struct tm *utc_time = gmtime(&updated_at);
+
+  if (utc_time) {
+    snprintf(
+        observed_at,
+        sizeof(observed_at),
+        "%02d:%02dZ",
+        utc_time->tm_hour,
+        utc_time->tm_min
+    );
+  }
 
   if (offline) {
     if (elapsed_minutes <= 0) {
       snprintf(
           buffer,
           buffer_size,
-          "Offline"
+          "%s - Offline",
+          observed_at
+      );
+    } else if (elapsed_minutes < 60) {
+      snprintf(
+          buffer,
+          buffer_size,
+          "%s - Offline %dm",
+          observed_at,
+          elapsed_minutes
       );
     } else {
       snprintf(
           buffer,
           buffer_size,
-          "Offline - %d min old",
-          elapsed_minutes
+          "%s - Offline %dh %dm",
+          observed_at,
+          elapsed_minutes / 60,
+          elapsed_minutes % 60
       );
     }
 
     return;
   }
 
-    if (elapsed_minutes <= 0) {
+  if (elapsed_minutes <= 0) {
     snprintf(
         buffer,
         buffer_size,
-        "METAR just reported"
+        "%s - just reported",
+        observed_at
     );
   } else if (elapsed_minutes == 1) {
     snprintf(
         buffer,
         buffer_size,
-        "METAR 1 min old"
+        "%s - 1 min old",
+        observed_at
     );
   } else if (elapsed_minutes < 60) {
     snprintf(
         buffer,
         buffer_size,
-        "METAR %d min old",
+        "%s - %d min old",
+        observed_at,
         elapsed_minutes
     );
   } else {
-    int elapsed_hours = elapsed_minutes / 60;
-    int remaining_minutes = elapsed_minutes % 60;
-
-    if (remaining_minutes == 0) {
-      snprintf(
-          buffer,
-          buffer_size,
-          "METAR %d hr old",
-          elapsed_hours
-      );
-    } else {
-      snprintf(
-          buffer,
-          buffer_size,
-          "METAR %d hr %d min old",
-          elapsed_hours,
-          remaining_minutes
-      );
-    }
+    snprintf(
+        buffer,
+        buffer_size,
+        "%s - %dh %dm old",
+        observed_at,
+        elapsed_minutes / 60,
+        elapsed_minutes % 60
+    );
   }
 }
