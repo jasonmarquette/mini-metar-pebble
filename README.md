@@ -2,20 +2,32 @@
 
 A Pebble watch app that displays current METAR weather for a configurable airport.
 
-The watch requests weather through PebbleKit JS, which calls a small Flask API and sends the result back to the watch using AppMessage.
+The watch requests weather through PebbleKit JS, which calls a lightweight Flask API and sends the result back to the watch using AppMessage.
+
+## Screenshot
+
+*Screenshots coming soon.*
+
+## Why this project?
+
+Mini METAR was created to provide pilots and aviation enthusiasts with a fast, glanceable weather display on Pebble smartwatches. It retrieves current METAR observations through a lightweight Flask API and presents the most important weather information in a format optimized for Pebble displays.
 
 ## Features
 
-- Displays the selected airport ICAO code
-- Shows the current flight category: VFR, MVFR, IFR, or LIFR
+- Live METAR weather for any supported airport identifier
+- Configurable airport through the Pebble configuration page
+- Save up to 10 frequently used airports for quick selection
+- Displays:
+  - Flight category: VFR, MVFR, IFR, or LIFR
+  - Temperature in Fahrenheit or Celsius
+  - Altimeter setting in inHg or hPa
+  - Wind direction and speed in knots
+  - METAR observation time and age
+- Automatic refresh every 5 minutes
+- Manual refresh from the watch
 - Color-coded flight category on color Pebble watches
-- Displays temperature in Fahrenheit or Celsius
-- Displays pressure in inHg or hPa
-- Displays wind direction and speed in knots
-- Shows how long ago the METAR was updated
-- Supports manual and automatic weather refreshes
-- Includes a web-based configuration page
-- Responsive layout for rectangular and round Pebble displays
+- Responsive layouts for rectangular and round Pebble displays
+- Offline indication when weather cannot be retrieved
 
 ## Supported platforms
 
@@ -48,19 +60,25 @@ src/c/formatter/                Temperature, pressure, wind, and time formatting
 src/c/weather/                  Weather state and display coordination
 src/c/windows/                  Pebble user interface
 src/pkjs/index.js               Phone-side METAR retrieval and settings
+mini-metar-config.html          Web-based configuration page
 package.json                    App metadata, platforms, and message keys
 wscript                         Pebble SDK build configuration
 ```
 
 ## Configuration
 
-The configuration page allows the user to select:
+The companion configuration page allows the user to configure the app without rebuilding it.
 
-- Airport ICAO identifier, such as `KCXO`
-- Fahrenheit or Celsius
-- inHg or hPa
+Available options include:
 
-The selected settings are saved through PebbleKit JS and sent to the watch with each weather update.
+- Airport identifier, such as `KCXO`
+- Temperature units: Fahrenheit or Celsius
+- Pressure units: inHg or hPa
+- Saved Airports list for quick selection
+
+Saved Airports are stored locally on the connected phone. Users can save up to 10 airports, tap one to select it, or remove airports they no longer need.
+
+After the user presses **Save Settings**, PebbleKit JS stores the selected settings, requests fresh METAR data, and sends the updated weather to the watch.
 
 Configuration page:
 
@@ -100,6 +118,12 @@ Pebble Time 2:
 pebble install --emulator emery
 ```
 
+To open the app configuration page while testing in the emulator:
+
+```bash
+pebble emu-app-config
+```
+
 ## Installing on a watch
 
 With a compatible phone and Pebble development connection available:
@@ -116,11 +140,33 @@ The app currently retrieves METAR data through:
 https://jasonmarquette.com/api/metar
 ```
 
-Routine METAR observations are commonly issued approximately once per hour. A future improvement is to investigate and more clearly identify stale observations when the displayed METAR becomes unusually old.
+The API retrieves aviation weather data from AviationWeather.gov and returns a compact JSON response designed for the Pebble app.
+
+Routine METAR observations are commonly issued approximately once per hour, so the displayed observation may be several minutes old even when the app has just refreshed.
 
 ## Development status
 
-Working features include live METAR retrieval, configurable airport selection, unit preferences, category colors, responsive layouts, and support for Basalt, Gabbro, and Emery.
+Current features include:
+
+- ✅ Live METAR retrieval
+- ✅ Configurable airport
+- ✅ Saved Airports
+- ✅ Fahrenheit and Celsius
+- ✅ inHg and hPa
+- ✅ Manual refresh
+- ✅ Automatic 5-minute refresh
+- ✅ Flight-category colors
+- ✅ Observation time and age
+- ✅ Offline indication
+- ✅ Responsive layouts
+- ✅ Basalt, Gabbro, and Emery support
+
+Potential future enhancements include:
+
+- Raw METAR text display
+- Additional weather fields such as visibility, ceiling, and dew point
+- Better indication of unusually old observations
+- Additional weather providers as fallbacks
 
 ## Pebble SDK documentation
 
