@@ -95,7 +95,7 @@ static void main_window_load(Window *window) {
       text_layer_get_layer(s_pressure_layer));
 
   s_wind_layer = text_layer_create(
-      GRect(0, 105, bounds.size.w, 30));
+      GRect(0, wind_y, bounds.size.w, 30));
 
   configure_text_layer(
       s_wind_layer,
