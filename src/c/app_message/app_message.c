@@ -72,13 +72,7 @@ static void inbox_received_handler(
     );
   }
 
-  if (updated_tuple) {
-    weather_set_updated_at(
-        (time_t)updated_tuple->value->int32
-    );
-  } else {
-    weather_set_updated_at(time(NULL));
-  }
+  weather_set_updated_at(time(NULL));
 
   if (offline_tuple) {
     weather_set_offline(

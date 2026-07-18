@@ -9,6 +9,20 @@ static void minute_tick_handler(
     TimeUnits units_changed) {
 
   weather_refresh_status();
+
+  /*
+   * Request fresh weather every five minutes.
+   * Using tm_min keeps the schedule aligned to the clock:
+   * 10:00, 10:05, 10:10, etc.
+   */
+  if ((tick_time->tm_min % 5) == 0) {
+    APP_LOG(
+        APP_LOG_LEVEL_INFO,
+        "Requesting scheduled METAR refresh"
+    );
+
+    app_message_request_weather();
+  }
 }
 
 static void init(void) {

@@ -1,4 +1,3 @@
-var REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 var DEFAULT_AIRPORT = 'KCXO';
 var savedAirport = localStorage.getItem('airport');
 
@@ -161,13 +160,7 @@ function fetchMetar(airport) {
 
 Pebble.addEventListener('ready', function() {
   console.log('Mini METAR PebbleKit JS ready.');
-
   fetchMetar(DEFAULT_AIRPORT);
-
-  setInterval(function() {
-    console.log('Automatic 5-minute METAR refresh.');
-    fetchMetar(DEFAULT_AIRPORT);
-  }, REFRESH_INTERVAL_MS);
 });
 
 Pebble.addEventListener('appmessage', function(event) {
