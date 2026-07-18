@@ -34,7 +34,6 @@ static void init(void) {
    * Temporary fallback display.
    * Live data will replace this after the phone responds.
    */
-  weather_show_sample_data();
 
   app_message_service_init();
 

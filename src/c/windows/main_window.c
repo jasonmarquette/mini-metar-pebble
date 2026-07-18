@@ -2,6 +2,8 @@
 
 #include <string.h>
 
+#include "../app_message/app_message.h"
+
 static Window *s_main_window;
 
 static TextLayer *s_airport_layer;
@@ -35,6 +37,27 @@ static void configure_text_layer(
   text_layer_set_text_alignment(
       layer,
       alignment
+  );
+}
+
+static void select_click_handler(
+    ClickRecognizerRef recognizer,
+    void *context) {
+
+  APP_LOG(
+      APP_LOG_LEVEL_INFO,
+      "Manual weather refresh requested"
+  );
+
+  app_message_request_weather();
+}
+
+static void click_config_provider(
+    void *context) {
+
+  window_single_click_subscribe(
+      BUTTON_ID_SELECT,
+      select_click_handler
   );
 }
 
@@ -314,6 +337,11 @@ void main_window_push(void) {
   if (!s_main_window) {
     s_main_window =
         window_create();
+
+    window_set_click_config_provider(
+        s_main_window,
+        click_config_provider
+    );
 
     window_set_window_handlers(
         s_main_window,
