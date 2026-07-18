@@ -14,6 +14,7 @@
     "targetPlatforms": [
       "basalt",
       "emery",
+      "aplite",
       "gabbro"
     ],
     "capabilities": [
