@@ -1,5 +1,6 @@
 # Mini METAR for Pebble
-<img src="images/banner.png">
+
+![Mini METAR banner](images/banner.png)
 
 A Pebble watch app that displays current METAR weather for a configurable airport.
 
