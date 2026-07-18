@@ -2,6 +2,15 @@
 
 #include "../weather/weather.h"
 
+#include "../windows/main_window.h"
+
+static AppTimer *s_updated_timer = NULL;
+
+static void restore_updated_status(void *context) {
+  s_updated_timer = NULL;
+  weather_refresh_status();
+}
+
 static void inbox_received_handler(
     DictionaryIterator *iterator,
     void *context) {
@@ -72,7 +81,13 @@ static void inbox_received_handler(
     );
   }
 
+  if (updated_tuple) {
+  weather_set_updated_at(
+      updated_tuple->value->int32
+  );
+} else {
   weather_set_updated_at(time(NULL));
+}
 
   if (offline_tuple) {
     weather_set_offline(
@@ -101,6 +116,18 @@ static void inbox_received_handler(
   );
 
   weather_refresh_display();
+
+main_window_set_updated("Updated now");
+
+if (s_updated_timer) {
+  app_timer_cancel(s_updated_timer);
+}
+
+s_updated_timer = app_timer_register(
+    2000,
+    restore_updated_status,
+    NULL
+);
 }
 
 static void inbox_dropped_handler(

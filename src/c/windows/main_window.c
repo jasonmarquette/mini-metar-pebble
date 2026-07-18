@@ -49,6 +49,8 @@ static void select_click_handler(
       "Manual weather refresh requested"
   );
 
+  main_window_set_updated("Refreshing...");
+
   app_message_request_weather();
 }
 
