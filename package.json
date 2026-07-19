@@ -7,7 +7,7 @@
   ],
   "private": true,
   "pebble": {
-    "displayName": "mini-metar-pebble",
+    "displayName": "Mini Metar",
     "uuid": "168d050a-5ee6-4441-bcb7-e07a1eaa58df",
     "sdkVersion": "3",
     "enableMultiJS": true,
