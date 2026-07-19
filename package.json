@@ -40,7 +40,14 @@
       "RequestPreviousAirport"
     ],
     "resources": {
-      "media": []
+      "media": [
+    {
+      "type": "bitmap",
+      "name": "MENU_ICON",
+      "file": "images/emery-screenshot.png",
+      "menuIcon": true
+    }
+  ]
     }
   }
 }
