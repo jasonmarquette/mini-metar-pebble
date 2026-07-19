@@ -3,6 +3,7 @@
 #include <pebble.h>
 
 void main_window_push(void);
+void main_window_destroy(void);
 
 void main_window_set_airport(
     const char *airport
