@@ -184,8 +184,10 @@ function getUseHpa() {
 function sendWeatherToWatch(metar, requestedAirport) {
   var weather = {};
 
-  weather[messageKeys.Airport] =
-    cleanAirport(metar.airport) || requestedAirport;
+  // Always display the airport the user selected. Some API responses may
+  // contain a stale or default airport value, which would otherwise replace
+  // the new airport on the watch immediately after selection.
+  weather[messageKeys.Airport] = requestedAirport;
   weather[messageKeys.Category] = metar.category || '---';
   weather[messageKeys.TemperatureC] =
     Number(metar.temperatureC) || 0;
@@ -205,7 +207,10 @@ function sendWeatherToWatch(metar, requestedAirport) {
   weather[messageKeys.UseCelsius] = getUseCelsius() ? 1 : 0;
   weather[messageKeys.UseHpa] = getUseHpa() ? 1 : 0;
 
-  console.log('Sending weather: ' + JSON.stringify(weather));
+  console.log(
+    'Sending weather for selected airport ' + requestedAirport +
+    '; API airport was ' + cleanAirport(metar.airport)
+  );
 
   sendAppMessageWithRetry(
     weather,
