@@ -114,6 +114,43 @@ function setAirport(airport) {
   saveAirportList();
 }
 
+function sendAppMessageWithRetry(message, description, attempt) {
+  var retryAttempt = attempt || 0;
+
+  Pebble.sendAppMessage(
+    message,
+    function() {
+      console.log(description + ' sent to watch.');
+    },
+    function(error) {
+      console.log(
+        description + ' failed: ' + JSON.stringify(error)
+      );
+
+      if (retryAttempt < 3) {
+        setTimeout(function() {
+          sendAppMessageWithRetry(
+            message,
+            description,
+            retryAttempt + 1
+          );
+        }, 400 * (retryAttempt + 1));
+      }
+    }
+  );
+}
+
+function sendSelectedAirportToWatch(airport) {
+  var message = {};
+  message[messageKeys.Airport] = airport;
+
+  sendAppMessageWithRetry(
+    message,
+    'Selected airport ' + airport,
+    0
+  );
+}
+
 function selectAirport(offset) {
   if (!AIRPORTS.length) {
     loadAirportList();
@@ -132,6 +169,7 @@ function selectAirport(offset) {
     ' of ' + AIRPORTS.length + ')'
   );
 
+  sendSelectedAirportToWatch(DEFAULT_AIRPORT);
   fetchMetar(DEFAULT_AIRPORT);
 }
 
@@ -144,59 +182,53 @@ function getUseHpa() {
 }
 
 function sendWeatherToWatch(metar, requestedAirport) {
-  var weather = {
-    Airport: cleanAirport(metar.airport) || requestedAirport,
-    Category: metar.category || '---',
-    TemperatureC: Number(metar.temperatureC) || 0,
-    PressureHpa: Number(metar.pressureHpa) || 0,
-    WindDirection:
-      metar.windDirection === undefined ||
-      metar.windDirection === null
-        ? -1
-        : Number(metar.windDirection),
-    WindSpeedKt: Number(metar.windSpeedKt) || 0,
-    UpdatedAt:
-      Number(metar.updatedAt) ||
-      Math.floor(Date.now() / 1000),
-    Offline: 0,
-    UseCelsius: getUseCelsius() ? 1 : 0,
-    UseHpa: getUseHpa() ? 1 : 0
-  };
+  var weather = {};
+
+  weather[messageKeys.Airport] =
+    cleanAirport(metar.airport) || requestedAirport;
+  weather[messageKeys.Category] = metar.category || '---';
+  weather[messageKeys.TemperatureC] =
+    Number(metar.temperatureC) || 0;
+  weather[messageKeys.PressureHpa] =
+    Number(metar.pressureHpa) || 0;
+  weather[messageKeys.WindDirection] =
+    metar.windDirection === undefined ||
+    metar.windDirection === null
+      ? -1
+      : Number(metar.windDirection);
+  weather[messageKeys.WindSpeedKt] =
+    Number(metar.windSpeedKt) || 0;
+  weather[messageKeys.UpdatedAt] =
+    Number(metar.updatedAt) ||
+    Math.floor(Date.now() / 1000);
+  weather[messageKeys.Offline] = 0;
+  weather[messageKeys.UseCelsius] = getUseCelsius() ? 1 : 0;
+  weather[messageKeys.UseHpa] = getUseHpa() ? 1 : 0;
 
   console.log('Sending weather: ' + JSON.stringify(weather));
 
-  Pebble.sendAppMessage(
+  sendAppMessageWithRetry(
     weather,
-    function() {
-      console.log('Live METAR sent to watch.');
-    },
-    function(error) {
-      console.log(
-        'Could not send METAR: ' + JSON.stringify(error)
-      );
-    }
+    'Live METAR for ' + requestedAirport,
+    0
   );
 }
 
 function sendOfflineStatus(airportCode) {
-  var offlineMessage = {
-    Offline: 1,
-    Airport: airportCode || DEFAULT_AIRPORT,
-    UseCelsius: getUseCelsius() ? 1 : 0,
-    UseHpa: getUseHpa() ? 1 : 0
-  };
+  var offlineMessage = {};
 
-  Pebble.sendAppMessage(
+  offlineMessage[messageKeys.Offline] = 1;
+  offlineMessage[messageKeys.Airport] =
+    airportCode || DEFAULT_AIRPORT;
+  offlineMessage[messageKeys.UseCelsius] =
+    getUseCelsius() ? 1 : 0;
+  offlineMessage[messageKeys.UseHpa] =
+    getUseHpa() ? 1 : 0;
+
+  sendAppMessageWithRetry(
     offlineMessage,
-    function() {
-      console.log('Offline status sent.');
-    },
-    function(error) {
-      console.log(
-        'Could not send offline status: ' +
-        JSON.stringify(error)
-      );
-    }
+    'Offline status for ' + airportCode,
+    0
   );
 }
 
@@ -372,5 +404,6 @@ Pebble.addEventListener('webviewclosed', function(event) {
   );
 
   console.log('Settings saved: ' + JSON.stringify(settings));
+  sendSelectedAirportToWatch(DEFAULT_AIRPORT);
   fetchMetar(DEFAULT_AIRPORT);
 });
