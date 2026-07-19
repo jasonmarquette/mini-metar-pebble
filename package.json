@@ -41,13 +41,13 @@
     ],
     "resources": {
       "media": [
-    {
-      "type": "bitmap",
-      "name": "MENU_ICON",
-      "file": "images/emery-screenshot.png",
-      "menuIcon": true
-    }
-  ]
+        {
+          "type": "bitmap",
+          "name": "MENU_ICON",
+          "file": "images/menu-icon.png",
+          "menuIcon": true
+        }
+      ]
     }
   }
 }
