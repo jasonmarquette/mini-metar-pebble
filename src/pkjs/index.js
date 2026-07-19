@@ -1,3 +1,5 @@
+var messageKeys = require('message_keys');
+
 var DEFAULT_AIRPORT = 'KCXO';
 
 var METAR_URL = 'https://jasonmarquette.com/api/metar';
@@ -200,7 +202,16 @@ Pebble.addEventListener(
   function(event) {
     var payload = event.payload || {};
 
-    if (payload.RequestWeather) {
+    console.log(
+      'Message received from watch: ' +
+      JSON.stringify(payload)
+    );
+
+    var requestWeather =
+      payload.RequestWeather ||
+      payload[messageKeys.RequestWeather];
+
+    if (requestWeather) {
       console.log(
         'Watch requested weather refresh.'
       );
