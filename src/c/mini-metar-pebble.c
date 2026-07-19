@@ -48,6 +48,7 @@ static void init(void) {
 static void deinit(void) {
   tick_timer_service_unsubscribe();
   app_message_service_deinit();
+  main_window_destroy();
 }
 
 int main(void) {
