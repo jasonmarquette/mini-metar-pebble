@@ -4,6 +4,36 @@
 #include "weather/weather.h"
 #include "windows/main_window.h"
 
+#define WEATHER_REFRESH_INTERVAL_MS (5 * 60 * 1000)
+
+static AppTimer *s_weather_refresh_timer = NULL;
+
+static void schedule_weather_refresh(void);
+
+static void weather_refresh_timer_handler(void *context) {
+  s_weather_refresh_timer = NULL;
+
+  APP_LOG(
+      APP_LOG_LEVEL_INFO,
+      "Automatic weather refresh requested"
+  );
+
+  app_message_request_weather();
+  schedule_weather_refresh();
+}
+
+static void schedule_weather_refresh(void) {
+  if (s_weather_refresh_timer) {
+    app_timer_cancel(s_weather_refresh_timer);
+  }
+
+  s_weather_refresh_timer = app_timer_register(
+      WEATHER_REFRESH_INTERVAL_MS,
+      weather_refresh_timer_handler,
+      NULL
+  );
+}
+
 static void minute_tick_handler(
     struct tm *tick_time,
     TimeUnits units_changed) {
@@ -15,15 +45,6 @@ static void minute_tick_handler(
       "Minute tick: %d",
       tick_time->tm_min
   );
-
-  if ((tick_time->tm_min % 5) == 0) {
-    APP_LOG(
-        APP_LOG_LEVEL_INFO,
-        "Requesting weather refresh"
-    );
-
-    app_message_request_weather();
-  }
 }
 
 static void init(void) {
@@ -43,9 +64,15 @@ static void init(void) {
   );
 
   app_message_request_weather();
+  schedule_weather_refresh();
 }
 
 static void deinit(void) {
+  if (s_weather_refresh_timer) {
+    app_timer_cancel(s_weather_refresh_timer);
+    s_weather_refresh_timer = NULL;
+  }
+
   tick_timer_service_unsubscribe();
   app_message_service_deinit();
   main_window_destroy();
