@@ -201,9 +201,6 @@ static void main_window_unload(Window *window) {
   s_pressure_layer = NULL;
   s_wind_layer = NULL;
   s_updated_layer = NULL;
-
-  window_destroy(s_main_window);
-  s_main_window = NULL;
 }
 
 void main_window_push(void) {
@@ -225,6 +222,13 @@ void main_window_push(void) {
   }
 
   window_stack_push(s_main_window, true);
+}
+
+void main_window_destroy(void) {
+  if (s_main_window) {
+    window_destroy(s_main_window);
+    s_main_window = NULL;
+  }
 }
 
 void main_window_set_airport(const char *airport) {
