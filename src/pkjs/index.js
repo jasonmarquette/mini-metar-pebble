@@ -1,30 +1,135 @@
 var messageKeys = require('message_keys');
 
 var DEFAULT_AIRPORT = 'KCXO';
+var AIRPORTS = [];
+var currentAirportIndex = 0;
 
 var METAR_URL = 'https://jasonmarquette.com/api/metar';
 var CONFIG_URL =
   'https://jasonmarquette.com/pebble/mini-metar-config.html';
 
-var savedAirport = localStorage.getItem('airport');
+function cleanAirport(airport) {
+  return String(airport || '')
+    .trim()
+    .toUpperCase();
+}
 
-if (savedAirport) {
-  DEFAULT_AIRPORT = savedAirport;
+function parseAirportList(value) {
+  var rawAirports;
+
+  if (Array.isArray(value)) {
+    rawAirports = value;
+  } else {
+    rawAirports = String(value || '').split(/[\s,;]+/);
+  }
+
+  var airports = [];
+
+  rawAirports.forEach(function(airport) {
+    var cleanedAirport = cleanAirport(airport);
+
+    if (
+      cleanedAirport &&
+      airports.indexOf(cleanedAirport) === -1
+    ) {
+      airports.push(cleanedAirport);
+    }
+  });
+
+  return airports;
+}
+
+function saveAirportList() {
+  localStorage.setItem('airports', JSON.stringify(AIRPORTS));
+  localStorage.setItem('airport', DEFAULT_AIRPORT);
+}
+
+function loadAirportList() {
+  var savedList = localStorage.getItem('airports');
+  var savedAirport = localStorage.getItem('airport');
+  var parsedList = [];
+
+  if (savedList) {
+    try {
+      parsedList = parseAirportList(JSON.parse(savedList));
+    } catch (error) {
+      parsedList = parseAirportList(savedList);
+    }
+  }
+
+  if (!parsedList.length && savedAirport) {
+    parsedList = parseAirportList(savedAirport);
+  }
+
+  if (!parsedList.length) {
+    parsedList = ['KCXO'];
+  }
+
+  AIRPORTS = parsedList;
+
+  var savedIndex = AIRPORTS.indexOf(cleanAirport(savedAirport));
+  currentAirportIndex = savedIndex >= 0 ? savedIndex : 0;
+  DEFAULT_AIRPORT = AIRPORTS[currentAirportIndex];
+
+  saveAirportList();
+}
+
+function setAirportList(value) {
+  var airports = parseAirportList(value);
+
+  if (!airports.length) {
+    return;
+  }
+
+  AIRPORTS = airports;
+  currentAirportIndex = 0;
+  DEFAULT_AIRPORT = AIRPORTS[currentAirportIndex];
+  saveAirportList();
+
+  console.log('Airport list set to ' + AIRPORTS.join(', '));
 }
 
 function setAirport(airport) {
-  var cleanedAirport = String(airport || '')
-    .trim()
-    .toUpperCase();
+  var cleanedAirport = cleanAirport(airport);
 
   if (!cleanedAirport) {
     return;
   }
 
+  var existingIndex = AIRPORTS.indexOf(cleanedAirport);
+
+  if (existingIndex === -1) {
+    AIRPORTS.push(cleanedAirport);
+    currentAirportIndex = AIRPORTS.length - 1;
+  } else {
+    currentAirportIndex = existingIndex;
+  }
+
   DEFAULT_AIRPORT = cleanedAirport;
-  localStorage.setItem('airport', DEFAULT_AIRPORT);
+  saveAirportList();
 
   console.log('Airport set to ' + DEFAULT_AIRPORT);
+}
+
+function selectAirport(offset) {
+  if (!AIRPORTS.length) {
+    loadAirportList();
+  }
+
+  currentAirportIndex =
+    (currentAirportIndex + offset + AIRPORTS.length) %
+    AIRPORTS.length;
+
+  DEFAULT_AIRPORT = AIRPORTS[currentAirportIndex];
+  saveAirportList();
+
+  console.log(
+    'Selected airport ' + DEFAULT_AIRPORT +
+    ' (' + (currentAirportIndex + 1) +
+    ' of ' + AIRPORTS.length + ')'
+  );
+
+  fetchMetar(DEFAULT_AIRPORT);
 }
 
 function getUseCelsius() {
@@ -96,11 +201,9 @@ function sendOfflineStatus() {
 }
 
 function fetchMetar(airport) {
-  var airportCode = String(
+  var airportCode = cleanAirport(
     airport || DEFAULT_AIRPORT
-  )
-    .trim()
-    .toUpperCase();
+  );
 
   if (!airportCode) {
     airportCode = 'KCXO';
@@ -128,7 +231,6 @@ function fetchMetar(airport) {
       console.log(
         'No recent METAR found for ' + airportCode
       );
-
       sendOfflineStatus();
       return;
     }
@@ -141,7 +243,6 @@ function fetchMetar(airport) {
         'METAR request failed: ' +
         request.responseText
       );
-
       sendOfflineStatus();
       return;
     }
@@ -155,7 +256,6 @@ function fetchMetar(airport) {
         'Could not parse METAR JSON: ' +
         error.message
       );
-
       sendOfflineStatus();
       return;
     }
@@ -164,7 +264,6 @@ function fetchMetar(airport) {
       console.log(
         'METAR response did not contain valid weather.'
       );
-
       sendOfflineStatus();
       return;
     }
@@ -190,9 +289,12 @@ function fetchMetar(airport) {
   request.send();
 }
 
+loadAirportList();
+
 Pebble.addEventListener('ready', function() {
   console.log('Mini METAR PebbleKit JS ready.');
   console.log('Current airport: ' + DEFAULT_AIRPORT);
+  console.log('Saved airports: ' + AIRPORTS.join(', '));
 
   fetchMetar(DEFAULT_AIRPORT);
 });
@@ -210,12 +312,25 @@ Pebble.addEventListener(
     var requestWeather =
       payload.RequestWeather ||
       payload[messageKeys.RequestWeather];
+    var requestNextAirport =
+      payload.RequestNextAirport ||
+      payload[messageKeys.RequestNextAirport];
+    var requestPreviousAirport =
+      payload.RequestPreviousAirport ||
+      payload[messageKeys.RequestPreviousAirport];
+
+    if (requestNextAirport) {
+      selectAirport(1);
+      return;
+    }
+
+    if (requestPreviousAirport) {
+      selectAirport(-1);
+      return;
+    }
 
     if (requestWeather) {
-      console.log(
-        'Watch requested weather refresh.'
-      );
-
+      console.log('Watch requested weather refresh.');
       fetchMetar(DEFAULT_AIRPORT);
     }
   }
@@ -230,13 +345,14 @@ Pebble.addEventListener(
       CONFIG_URL +
       '?airport=' +
       encodeURIComponent(DEFAULT_AIRPORT) +
+      '&airports=' +
+      encodeURIComponent(AIRPORTS.join(',')) +
       '&useCelsius=' +
       (getUseCelsius() ? '1' : '0') +
       '&useHpa=' +
       (getUseHpa() ? '1' : '0');
 
     console.log('Configuration URL: ' + url);
-
     Pebble.openURL(url);
   }
 );
@@ -270,15 +386,23 @@ Pebble.addEventListener(
       return;
     }
 
-    if (settings.airport) {
-      setAirport(settings.airport);
+    if (settings.airports) {
+      setAirportList(settings.airports);
+    } else if (settings.airport) {
+      var configuredAirports =
+        parseAirportList(settings.airport);
+
+      if (configuredAirports.length > 1) {
+        setAirportList(configuredAirports);
+      } else {
+        setAirport(settings.airport);
+      }
     }
 
     localStorage.setItem(
       'useCelsius',
       settings.useCelsius ? '1' : '0'
     );
-
     localStorage.setItem(
       'useHpa',
       settings.useHpa ? '1' : '0'
