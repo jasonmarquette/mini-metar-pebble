@@ -48,7 +48,6 @@ static void inbox_received_handler(
     const char *airport = airport_tuple->value->cstring;
 
     weather_set_airport(airport);
-    main_window_set_airport(airport);
 
     APP_LOG(
         APP_LOG_LEVEL_INFO,
@@ -58,6 +57,7 @@ static void inbox_received_handler(
   }
 
   if (!has_weather_data) {
+    weather_refresh_display();
     return;
   }
 
