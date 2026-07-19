@@ -133,7 +133,7 @@ static void outbox_failed_handler(
   weather_refresh_status();
 }
 
-static void send_request(uint32_t key, const char *description) {
+static void send_request(uint8_t request_value, const char *description) {
   DictionaryIterator *iterator = NULL;
 
   AppMessageResult result =
@@ -150,7 +150,12 @@ static void send_request(uint32_t key, const char *description) {
     return;
   }
 
-  dict_write_uint8(iterator, key, 1);
+  dict_write_uint8(
+      iterator,
+      MESSAGE_KEY_RequestWeather,
+      request_value
+  );
+
   result = app_message_outbox_send();
 
   if (result != APP_MSG_OK) {
@@ -165,24 +170,15 @@ static void send_request(uint32_t key, const char *description) {
 }
 
 void app_message_request_weather(void) {
-  send_request(
-      MESSAGE_KEY_RequestWeather,
-      "weather request"
-  );
+  send_request(1, "weather request");
 }
 
 void app_message_request_next_airport(void) {
-  send_request(
-      MESSAGE_KEY_RequestNextAirport,
-      "next airport request"
-  );
+  send_request(2, "next airport request");
 }
 
 void app_message_request_previous_airport(void) {
-  send_request(
-      MESSAGE_KEY_RequestPreviousAirport,
-      "previous airport request"
-  );
+  send_request(3, "previous airport request");
 }
 
 void app_message_service_init(void) {
