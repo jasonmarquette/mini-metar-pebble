@@ -29,7 +29,7 @@ function parseAirportList(value) {
     var cleanedAirport = cleanAirport(airport);
 
     if (
-      cleanedAirport &&
+      /^[A-Z0-9]{3,4}$/.test(cleanedAirport) &&
       airports.indexOf(cleanedAirport) === -1
     ) {
       airports.push(cleanedAirport);
@@ -74,7 +74,7 @@ function loadAirportList() {
   saveAirportList();
 }
 
-function setAirportList(value) {
+function setAirportList(value, selectedAirport) {
   var airports = parseAirportList(value);
 
   if (!airports.length) {
@@ -82,11 +82,16 @@ function setAirportList(value) {
   }
 
   AIRPORTS = airports;
-  currentAirportIndex = 0;
+
+  var selected = cleanAirport(selectedAirport);
+  var selectedIndex = AIRPORTS.indexOf(selected);
+
+  currentAirportIndex = selectedIndex >= 0 ? selectedIndex : 0;
   DEFAULT_AIRPORT = AIRPORTS[currentAirportIndex];
   saveAirportList();
 
   console.log('Airport list set to ' + AIRPORTS.join(', '));
+  console.log('Active airport set to ' + DEFAULT_AIRPORT);
 }
 
 function setAirport(airport) {
@@ -107,8 +112,6 @@ function setAirport(airport) {
 
   DEFAULT_AIRPORT = cleanedAirport;
   saveAirportList();
-
-  console.log('Airport set to ' + DEFAULT_AIRPORT);
 }
 
 function selectAirport(offset) {
@@ -140,9 +143,9 @@ function getUseHpa() {
   return localStorage.getItem('useHpa') === '1';
 }
 
-function sendWeatherToWatch(metar) {
+function sendWeatherToWatch(metar, requestedAirport) {
   var weather = {
-    Airport: metar.airport || DEFAULT_AIRPORT,
+    Airport: cleanAirport(metar.airport) || requestedAirport,
     Category: metar.category || '---',
     TemperatureC: Number(metar.temperatureC) || 0,
     PressureHpa: Number(metar.pressureHpa) || 0,
@@ -160,9 +163,7 @@ function sendWeatherToWatch(metar) {
     UseHpa: getUseHpa() ? 1 : 0
   };
 
-  console.log(
-    'Sending weather: ' + JSON.stringify(weather)
-  );
+  console.log('Sending weather: ' + JSON.stringify(weather));
 
   Pebble.sendAppMessage(
     weather,
@@ -171,17 +172,16 @@ function sendWeatherToWatch(metar) {
     },
     function(error) {
       console.log(
-        'Could not send METAR: ' +
-        JSON.stringify(error)
+        'Could not send METAR: ' + JSON.stringify(error)
       );
     }
   );
 }
 
-function sendOfflineStatus() {
+function sendOfflineStatus(airportCode) {
   var offlineMessage = {
     Offline: 1,
-    Airport: DEFAULT_AIRPORT,
+    Airport: airportCode || DEFAULT_AIRPORT,
     UseCelsius: getUseCelsius() ? 1 : 0,
     UseHpa: getUseHpa() ? 1 : 0
   };
@@ -201,9 +201,7 @@ function sendOfflineStatus() {
 }
 
 function fetchMetar(airport) {
-  var airportCode = cleanAirport(
-    airport || DEFAULT_AIRPORT
-  );
+  var airportCode = cleanAirport(airport || DEFAULT_AIRPORT);
 
   if (!airportCode) {
     airportCode = 'KCXO';
@@ -212,38 +210,29 @@ function fetchMetar(airport) {
   var url =
     METAR_URL +
     '?airport=' +
-    encodeURIComponent(airportCode);
+    encodeURIComponent(airportCode) +
+    '&_=' +
+    Date.now();
 
   console.log('Requesting METAR for ' + airportCode);
   console.log('METAR URL: ' + url);
 
   var request = new XMLHttpRequest();
-
   request.open('GET', url, true);
   request.timeout = 15000;
 
   request.onload = function() {
-    console.log(
-      'METAR HTTP status: ' + request.status
-    );
+    console.log('METAR HTTP status: ' + request.status);
 
     if (request.status === 204) {
-      console.log(
-        'No recent METAR found for ' + airportCode
-      );
-      sendOfflineStatus();
+      console.log('No recent METAR found for ' + airportCode);
+      sendOfflineStatus(airportCode);
       return;
     }
 
-    if (
-      request.status < 200 ||
-      request.status >= 300
-    ) {
-      console.log(
-        'METAR request failed: ' +
-        request.responseText
-      );
-      sendOfflineStatus();
+    if (request.status < 200 || request.status >= 300) {
+      console.log('METAR request failed: ' + request.responseText);
+      sendOfflineStatus(airportCode);
       return;
     }
 
@@ -252,41 +241,49 @@ function fetchMetar(airport) {
     try {
       response = JSON.parse(request.responseText);
     } catch (error) {
-      console.log(
-        'Could not parse METAR JSON: ' +
-        error.message
-      );
-      sendOfflineStatus();
+      console.log('Could not parse METAR JSON: ' + error.message);
+      sendOfflineStatus(airportCode);
       return;
     }
 
     if (!response || response.error) {
-      console.log(
-        'METAR response did not contain valid weather.'
-      );
-      sendOfflineStatus();
+      console.log('METAR response did not contain valid weather.');
+      sendOfflineStatus(airportCode);
       return;
     }
 
-    console.log(
-      'METAR received: ' +
-      JSON.stringify(response)
-    );
-
-    sendWeatherToWatch(response);
+    console.log('METAR received: ' + JSON.stringify(response));
+    sendWeatherToWatch(response, airportCode);
   };
 
   request.onerror = function() {
     console.log('METAR network request failed.');
-    sendOfflineStatus();
+    sendOfflineStatus(airportCode);
   };
 
   request.ontimeout = function() {
     console.log('METAR request timed out.');
-    sendOfflineStatus();
+    sendOfflineStatus(airportCode);
   };
 
   request.send();
+}
+
+function getPayloadValue(payload, keyName) {
+  if (payload[keyName] !== undefined) {
+    return Number(payload[keyName]);
+  }
+
+  var numericKey = messageKeys[keyName];
+
+  if (
+    numericKey !== undefined &&
+    payload[numericKey] !== undefined
+  ) {
+    return Number(payload[numericKey]);
+  }
+
+  return 0;
 }
 
 loadAirportList();
@@ -295,124 +292,85 @@ Pebble.addEventListener('ready', function() {
   console.log('Mini METAR PebbleKit JS ready.');
   console.log('Current airport: ' + DEFAULT_AIRPORT);
   console.log('Saved airports: ' + AIRPORTS.join(', '));
-
   fetchMetar(DEFAULT_AIRPORT);
 });
 
-Pebble.addEventListener(
-  'appmessage',
-  function(event) {
-    var payload = event.payload || {};
+Pebble.addEventListener('appmessage', function(event) {
+  var payload = event.payload || {};
 
-    console.log(
-      'Message received from watch: ' +
-      JSON.stringify(payload)
-    );
+  console.log(
+    'Message received from watch: ' + JSON.stringify(payload)
+  );
 
-    var requestWeather =
-      payload.RequestWeather ||
-      payload[messageKeys.RequestWeather];
-    var requestNextAirport =
-      payload.RequestNextAirport ||
-      payload[messageKeys.RequestNextAirport];
-    var requestPreviousAirport =
-      payload.RequestPreviousAirport ||
-      payload[messageKeys.RequestPreviousAirport];
+  var requestValue = getPayloadValue(payload, 'RequestWeather');
 
-    if (requestNextAirport) {
-      selectAirport(1);
-      return;
-    }
+  console.log('RequestWeather value: ' + requestValue);
 
-    if (requestPreviousAirport) {
-      selectAirport(-1);
-      return;
-    }
-
-    if (requestWeather) {
-      console.log('Watch requested weather refresh.');
-      fetchMetar(DEFAULT_AIRPORT);
-    }
+  if (requestValue === 2) {
+    selectAirport(1);
+    return;
   }
-);
 
-Pebble.addEventListener(
-  'showConfiguration',
-  function() {
-    console.log('Opening configuration page...');
-
-    var url =
-      CONFIG_URL +
-      '?airport=' +
-      encodeURIComponent(DEFAULT_AIRPORT) +
-      '&airports=' +
-      encodeURIComponent(AIRPORTS.join(',')) +
-      '&useCelsius=' +
-      (getUseCelsius() ? '1' : '0') +
-      '&useHpa=' +
-      (getUseHpa() ? '1' : '0');
-
-    console.log('Configuration URL: ' + url);
-    Pebble.openURL(url);
+  if (requestValue === 3) {
+    selectAirport(-1);
+    return;
   }
-);
 
-Pebble.addEventListener(
-  'webviewclosed',
-  function(event) {
-    console.log(
-      'Configuration closed. Response: ' +
-      event.response
-    );
-
-    if (!event.response) {
-      console.log(
-        'Configuration closed without saving.'
-      );
-      return;
-    }
-
-    var settings;
-
-    try {
-      settings = JSON.parse(
-        decodeURIComponent(event.response)
-      );
-    } catch (error) {
-      console.log(
-        'Could not parse settings: ' +
-        error.message
-      );
-      return;
-    }
-
-    if (settings.airports) {
-      setAirportList(settings.airports);
-    } else if (settings.airport) {
-      var configuredAirports =
-        parseAirportList(settings.airport);
-
-      if (configuredAirports.length > 1) {
-        setAirportList(configuredAirports);
-      } else {
-        setAirport(settings.airport);
-      }
-    }
-
-    localStorage.setItem(
-      'useCelsius',
-      settings.useCelsius ? '1' : '0'
-    );
-    localStorage.setItem(
-      'useHpa',
-      settings.useHpa ? '1' : '0'
-    );
-
-    console.log(
-      'Settings saved: ' +
-      JSON.stringify(settings)
-    );
-
+  if (requestValue === 1) {
     fetchMetar(DEFAULT_AIRPORT);
   }
-);
+});
+
+Pebble.addEventListener('showConfiguration', function() {
+  console.log('Opening configuration page...');
+
+  var url =
+    CONFIG_URL +
+    '?airport=' +
+    encodeURIComponent(DEFAULT_AIRPORT) +
+    '&airports=' +
+    encodeURIComponent(AIRPORTS.join(',')) +
+    '&useCelsius=' +
+    (getUseCelsius() ? '1' : '0') +
+    '&useHpa=' +
+    (getUseHpa() ? '1' : '0');
+
+  Pebble.openURL(url);
+});
+
+Pebble.addEventListener('webviewclosed', function(event) {
+  console.log(
+    'Configuration closed. Response: ' + event.response
+  );
+
+  if (!event.response) {
+    return;
+  }
+
+  var settings;
+
+  try {
+    settings = JSON.parse(decodeURIComponent(event.response));
+  } catch (error) {
+    console.log('Could not parse settings: ' + error.message);
+    return;
+  }
+
+  if (settings.airports) {
+    setAirportList(settings.airports, settings.airport);
+  } else if (settings.airport) {
+    setAirport(settings.airport);
+  }
+
+  localStorage.setItem(
+    'useCelsius',
+    settings.useCelsius ? '1' : '0'
+  );
+  localStorage.setItem(
+    'useHpa',
+    settings.useHpa ? '1' : '0'
+  );
+
+  console.log('Settings saved: ' + JSON.stringify(settings));
+  fetchMetar(DEFAULT_AIRPORT);
+});
