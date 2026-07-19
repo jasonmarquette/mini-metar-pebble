@@ -4,6 +4,35 @@
 #include "../windows/main_window.h"
 
 static AppTimer *s_updated_timer = NULL;
+static AppTimer *s_response_timer = NULL;
+
+static void cancel_response_timeout(void) {
+  if (s_response_timer) {
+    app_timer_cancel(s_response_timer);
+    s_response_timer = NULL;
+  }
+}
+
+static void response_timeout_handler(void *context) {
+  s_response_timer = NULL;
+
+  APP_LOG(
+      APP_LOG_LEVEL_WARNING,
+      "Phone did not respond to AppMessage request"
+  );
+
+  main_window_set_updated("Phone not responding");
+}
+
+static void start_response_timeout(void) {
+  cancel_response_timeout();
+
+  s_response_timer = app_timer_register(
+      20000,
+      response_timeout_handler,
+      NULL
+  );
+}
 
 static void restore_updated_status(void *context) {
   s_updated_timer = NULL;
@@ -13,6 +42,8 @@ static void restore_updated_status(void *context) {
 static void inbox_received_handler(
     DictionaryIterator *iterator,
     void *context) {
+
+  cancel_response_timeout();
 
   Tuple *airport_tuple =
       dict_find(iterator, MESSAGE_KEY_Airport);
@@ -119,11 +150,15 @@ static void inbox_dropped_handler(
     AppMessageResult reason,
     void *context) {
 
+  cancel_response_timeout();
+
   APP_LOG(
       APP_LOG_LEVEL_ERROR,
       "Inbox dropped: %d",
       reason
   );
+
+  main_window_set_updated("Message error");
 }
 
 static void outbox_sent_handler(
@@ -141,13 +176,15 @@ static void outbox_failed_handler(
     AppMessageResult reason,
     void *context) {
 
+  cancel_response_timeout();
+
   APP_LOG(
       APP_LOG_LEVEL_ERROR,
       "Outbox failed: %d",
       reason
   );
 
-  weather_refresh_status();
+  main_window_set_updated("Phone disconnected");
 }
 
 static void send_request(uint8_t request_value, const char *description) {
@@ -163,7 +200,7 @@ static void send_request(uint8_t request_value, const char *description) {
         description,
         result
     );
-    weather_refresh_status();
+    main_window_set_updated("Phone disconnected");
     return;
   }
 
@@ -182,8 +219,11 @@ static void send_request(uint8_t request_value, const char *description) {
         description,
         result
     );
-    weather_refresh_status();
+    main_window_set_updated("Phone disconnected");
+    return;
   }
+
+  start_response_timeout();
 }
 
 void app_message_request_weather(void) {
@@ -230,5 +270,6 @@ void app_message_service_deinit(void) {
     s_updated_timer = NULL;
   }
 
+  cancel_response_timeout();
   app_message_deregister_callbacks();
 }
