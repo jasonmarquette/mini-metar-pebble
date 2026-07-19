@@ -35,8 +35,30 @@ static void inbox_received_handler(
   Tuple *use_hpa_tuple =
       dict_find(iterator, MESSAGE_KEY_UseHpa);
 
+  bool has_weather_data =
+      category_tuple ||
+      temperature_tuple ||
+      pressure_tuple ||
+      wind_direction_tuple ||
+      wind_speed_tuple ||
+      updated_tuple ||
+      offline_tuple;
+
   if (airport_tuple) {
-    weather_set_airport(airport_tuple->value->cstring);
+    const char *airport = airport_tuple->value->cstring;
+
+    weather_set_airport(airport);
+    main_window_set_airport(airport);
+
+    APP_LOG(
+        APP_LOG_LEVEL_INFO,
+        "Airport changed to %s",
+        airport
+    );
+  }
+
+  if (!has_weather_data) {
+    return;
   }
 
   if (category_tuple) {
@@ -61,30 +83,25 @@ static void inbox_received_handler(
 
   if (updated_tuple) {
     weather_set_updated_at(updated_tuple->value->int32);
-  } else {
-    weather_set_updated_at(time(NULL));
   }
 
   if (offline_tuple) {
     weather_set_offline(offline_tuple->value->int32 != 0);
-  } else {
-    weather_set_offline(false);
   }
 
-  bool use_celsius = false;
-  bool use_hpa = false;
+  if (use_celsius_tuple || use_hpa_tuple) {
+    bool use_celsius =
+        use_celsius_tuple &&
+        use_celsius_tuple->value->int32 != 0;
 
-  if (use_celsius_tuple) {
-    use_celsius = use_celsius_tuple->value->int32 != 0;
+    bool use_hpa =
+        use_hpa_tuple &&
+        use_hpa_tuple->value->int32 != 0;
+
+    weather_set_units(use_celsius, use_hpa);
   }
 
-  if (use_hpa_tuple) {
-    use_hpa = use_hpa_tuple->value->int32 != 0;
-  }
-
-  weather_set_units(use_celsius, use_hpa);
   weather_refresh_display();
-
   main_window_set_updated("Updated now");
 
   if (s_updated_timer) {
